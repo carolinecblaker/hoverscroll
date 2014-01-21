@@ -286,7 +286,31 @@ $.fn.hoverscroll = function(params) {
 			}
 		}
 		
-		
+		//carolinecblaker: Write a new, similar function aimed at controlling touch gestures only
+		function checkTouch(x,y){
+	
+		    x = x - ctnr.offset().left;
+			y = y - ctnr.offset().top;
+			if (ctnr.hasClass('rolling')){
+				stopMoving();
+				ctnr.removeClass('rolling');
+			} else {
+			
+			var pos;
+			if (!params.vertical) {pos = x;}
+			else {pos = y;}
+			
+			for (i in zone) {
+				if (pos >= zone[i].from && pos < zone[i].to) {
+					if (zone[i].action == 'move') { startMoving(zone[i].direction, zone[i].speed);}
+					else {stopMoving();}
+				}
+			}
+			ctnr.addClass('rolling');
+			}
+		}
+
+		//end: carolinecblaker
 		/**
 		 * Sets the opacity of the left|top and right|bottom
 		 * arrows according to the scroll position.
@@ -399,15 +423,30 @@ $.fn.hoverscroll = function(params) {
 		if (params.rtl && !params.vertical) {
 			listctnr[0].scrollLeft = listctnr[0].scrollWidth - listctnr.width();
 		}
+		//carolinecblaker: Reroute touch devices to our new function that governs touch-only interactions
+		if ("ontouchstart" in document.documentElement) {
+			//Bind actions to the hoverscroll container - use mousemove
+			ctnr.bind('mousemove', function(e){
+			//give our touch function the same params
+			checkTouch(e.pageX, e.pageY);
+			//keep default actions from happening
+			return false;})
+			//This isn't  used but I left it in anyway, for future dev
+			.bind('touchend', function() {stopMoving();});
+			
 		
+			} else {
+				//end: carolinecblaker
 		// Bind actions to the hoverscroll container
 		ctnr
 		// Bind checkMouse to the mousemove
-		.mousemove(function(e) {checkMouse(e.pageX, e.pageY);})
+		.bind('mousemove touchstart', function(e){checkMouse(e.pageX, e.pageY);})
+		//.mousemove(function(e) {checkMouse(e.pageX, e.pageY);})
 		// Bind stopMoving to the mouseleave
 		// jQuery 1.2.x backward compatibility, thanks to Andy Mull!
 		// replaced .mouseleave(...) with .bind('mouseleave', ...)
-		.bind('mouseleave', function() {stopMoving();});
+		.bind('mouseleave touchend', function() {stopMoving();});
+		} //carolinecblaker: end loop
 
         // Bind the startMoving and stopMoving functions
         // to the HTML object for external access
